@@ -9,7 +9,7 @@ import codebuild = require('@aws-cdk/aws-codebuild');
 import cr = require('@aws-cdk/custom-resources');
 import lambda = require('@aws-cdk/aws-lambda');
 import path = require('path');
-import { Arn, Size } from '@aws-cdk/core';
+import { Arn, Size, RemovalPolicy } from '@aws-cdk/core';
 
 interface LambdaEFSMLStackProps extends cdk.StackProps {
   readonly installPackages?: string;
@@ -44,12 +44,14 @@ export class LambdaEFSMLStack extends cdk.Stack {
     ec2SecurityGroup.connections.allowTo(efsSecurityGroup, ec2.Port.tcp(2049));
     lambdaSecurityGroup.connections.allowTo(efsSecurityGroup, ec2.Port.tcp(2049));
 
-    // Elastic File System file systen.
+    // Elastic File System file system.
+    // For the purpose of cost saving, provisioned troughput has been kept low.
     const fs = new efs.FileSystem(this, 'LambdaEFSMLEFS', {
       vpc: vpc,
       securityGroup: efsSecurityGroup,
       throughputMode: efs.ThroughputMode.PROVISIONED,
-      provisionedThroughputPerSecond: Size.gibibytes(1)
+      provisionedThroughputPerSecond: Size.mebibytes(10),
+      removalPolicy: RemovalPolicy.DESTROY
     });
 
     const EfsAccessPoint = new efs.AccessPoint(this, 'EfsAccessPoint', {
